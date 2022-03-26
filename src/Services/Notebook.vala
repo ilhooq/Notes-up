@@ -44,6 +44,7 @@ public class ENotes.NotebookTable : DatabaseTable {
                                  + "rgb TEXT,"
                                  + "CSS TEXT,"
                                  + "stylesheet TEXT,"
+                                 + "order_num INTEGER,"
                                  + "parent_id INTEGER)");
         var res = stmt.step ();
         if (res != Sqlite.DONE) {
@@ -51,6 +52,11 @@ public class ENotes.NotebookTable : DatabaseTable {
         }
 
         set_table_name ("Notebook");
+
+        // Update schema for old database
+        if (!has_column ("Notebook", "order_num")) {
+            add_column("Notebook",  "order_num", "INTEGER");
+        }
     }
 
     public static NotebookTable get_instance () {
@@ -63,7 +69,7 @@ public class ENotes.NotebookTable : DatabaseTable {
 
                      // ID, Notebook
     public Gee.ArrayList<Notebook> get_notebooks () {
-        var stmt = create_stmt ("SELECT id, name, rgb, parent_id, css, stylesheet FROM Notebook");
+        var stmt = create_stmt ("SELECT id, name, rgb, parent_id, css, stylesheet FROM Notebook ORDER BY order_num ASC");
 
         var notebooks = new Gee.ArrayList<Notebook>();
 

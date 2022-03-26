@@ -73,6 +73,7 @@ public class ENotes.PageTable : DatabaseTable {
                                  + "html_cache TEXT NOT NULL DEFAULT '', "
                                  + "creation_date INTEGER,"
                                  + "modification_date INTEGER,"
+                                 + "order_num INTEGER,"
                                  + "notebook_id INTEGER)");
         var res = stmt.step ();
 
@@ -88,6 +89,11 @@ public class ENotes.PageTable : DatabaseTable {
         }
 
         set_table_name ("Page");
+
+        if (!has_column ("Page", "order_num")) {
+            add_column("Page",  "order_num", "INTEGER");
+        }
+
         ///This code summarises a notebook page. Instead of given youtube link this code changes into Youtube Video
 
         // Explaination for link: Regex for [Something](Something). As greedy as editor on markdown
@@ -177,7 +183,7 @@ public class ENotes.PageTable : DatabaseTable {
     }
 
     public Gee.ArrayList<Page> get_pages (int64 notebook_id) {
-        var stmt = create_stmt ("SELECT id, name, subtitle, data FROM Page Where notebook_id = ?");
+        var stmt = create_stmt ("SELECT id, name, subtitle, data FROM Page Where notebook_id = ? ORDER BY order_num ASC");
         bind_int (stmt, 1, notebook_id);
 
         var pages = new Gee.ArrayList<Page>();
@@ -205,7 +211,7 @@ public class ENotes.PageTable : DatabaseTable {
     }
 
     public Gee.ArrayList<Page> get_all_pages () {
-        var stmt = create_stmt ("SELECT id, name, subtitle, data FROM Page");
+        var stmt = create_stmt ("SELECT id, name, subtitle, data FROM Page ORDER BY name ASC");
 
         var pages = new Gee.ArrayList<Page>();
 
