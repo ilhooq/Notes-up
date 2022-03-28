@@ -21,13 +21,20 @@
 
 public class ENotes.PageItem : Gtk.ListBoxRow {
     public ENotes.Page page { get; construct set; }
+    public bool can_drag { get; construct set; }
 
     private Gtk.Grid grid;
     private Gtk.Label title_label;
     private Gtk.Label preview_label;
 
-    public PageItem (ENotes.Page page) {
-        Object (page: page);
+    private const Gtk.TargetEntry[] drag_targets = {
+        {"ENOTES_PAGESLIST_ROW", Gtk.TargetFlags.SAME_APP, 0}
+    };
+
+    public signal void index_changed ();
+
+    public PageItem (ENotes.Page page, bool can_drag = false) {
+        Object (page: page, can_drag: can_drag);
     }
 
     private static Trash trash_instance;
@@ -68,7 +75,19 @@ public class ENotes.PageItem : Gtk.ListBoxRow {
         var separator = new Gtk.Separator (Gtk.Orientation.HORIZONTAL);
         separator.hexpand = true;
 
-        this.add (grid);
+        if (this.can_drag) {
+            var dragBox = new Gtk.EventBox ();
+            dragBox.drag_data_get.connect (this.on_drag_data_get);
+            this.drag_data_received.connect (this.on_drag_data_received);
+            Gtk.drag_source_set (dragBox, Gdk.ModifierType.BUTTON1_MASK, drag_targets, Gdk.DragAction.MOVE);
+            Gtk.drag_dest_set (this, Gtk.DestDefaults.ALL, drag_targets, Gdk.DragAction.MOVE);
+
+            dragBox.add (grid);
+            this.add (dragBox);
+        } else {
+            this.add (grid);
+        }
+
         grid.add (title_label);
         grid.add (preview_label);
         grid.add (separator);
@@ -83,5 +102,43 @@ public class ENotes.PageItem : Gtk.ListBoxRow {
 
         title_label.sensitive = !trash_instance.is_page_trashed (page);
         preview_label.sensitive = title_label.sensitive;
+    }
+
+    private void on_drag_data_get (Gdk.DragContext drag_context, Gtk.SelectionData selection_data,
+        uint info, uint time ) {
+
+        uint8[] data = {(uint8) this.get_index (), 0};
+        selection_data.@set (selection_data.get_target (), 0, data);
+    }
+
+    private void on_drag_data_received (Gdk.DragContext drag_context, int x, int y,
+        Gtk.SelectionData selection_data, uint info, uint time) {
+
+        unowned uint8[] data = selection_data.get_data ();
+
+        int source_pos = (int) data[0];
+        int target_pos = this.get_index ();
+
+        if (source_pos == target_pos) {
+            Gtk.drag_finish (drag_context, true, true, time);
+            return;
+        }
+
+        var parent = this.get_parent ();
+
+        if (parent.get_type () == typeof (Gtk.ListBox)) {
+
+            var listbox = (Gtk.ListBox) parent;
+            var source = listbox.get_row_at_index (source_pos);
+
+            source.ref ();
+            listbox.remove (source);
+            listbox.insert (source, target_pos);
+            source.unref ();
+
+            index_changed ();
+        }
+
+        Gtk.drag_finish (drag_context, true, true, time);
     }
 }

@@ -90,6 +90,7 @@ public class ENotes.PageTable : DatabaseTable {
 
         set_table_name ("Page");
 
+        // Update schema for old database
         if (!has_column ("Page", "order_num")) {
             add_column("Page",  "order_num", "INTEGER");
         }
@@ -143,6 +144,14 @@ public class ENotes.PageTable : DatabaseTable {
         stmt.step ();
 
         page_saved (page);
+    }
+
+    public void save_page_order (Page page, int order) {
+        var stmt = create_stmt ("UPDATE Page SET order_num = ? WHERE id = ?");
+
+        bind_int (stmt, 1, order);
+        bind_int (stmt, 2, page.id);
+        stmt.step ();
     }
 
     public void move_to_notebook (Page page, int64 notebook) {

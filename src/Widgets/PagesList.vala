@@ -72,16 +72,6 @@ public class ENotes.PagesList : Gtk.Box {
             return true;
         });
 
-        listbox.set_sort_func ((row1, row2) => {
-            int64 a = ((PageItem) row1).page.id;
-            int64 b = ((PageItem) row2).page.id;
-
-            if (a > b) return -1;
-            if (b > a) return 1;
-
-            return 0;
-        });
-
         scroll_box.set_size_request (200,250);
         toolbar = build_toolbar ();
 
@@ -193,7 +183,7 @@ public class ENotes.PagesList : Gtk.Box {
 
         var pages = PageTable.get_instance ().get_pages (notebook.id);
 
-        load_page_list (pages);
+        load_page_list (pages, true);
 
         this.notebook_name.label = notebook.name.split ("§")[0] + ":";
     }
@@ -213,12 +203,12 @@ public class ENotes.PagesList : Gtk.Box {
         this.notebook_name.label = "Notes:";
     }
 
-    private void load_page_list (Gee.ArrayList<Page> pages) {
+    private void load_page_list (Gee.ArrayList<Page> pages, bool can_drag = false) {
         loading_pages = true;
         clear_pages ();
 
         foreach (ENotes.Page page in pages) {
-            new_page (page);
+            new_page (page, can_drag);
         }
 
         toolbar.set_sensitive (true);
@@ -232,13 +222,23 @@ public class ENotes.PagesList : Gtk.Box {
         loading_pages = false;
     }
 
-    private ENotes.PageItem new_page (ENotes.Page page) {
-        var page_box = new ENotes.PageItem (page);
+    private ENotes.PageItem new_page (ENotes.Page page, bool can_drag = false) {
+        var page_box = new ENotes.PageItem (page, can_drag);
+
+        page_box.index_changed.connect (this.on_index_changed);
+
         listbox.add (page_box);
 
         added_pages.set ((int)page.id, page_box);
 
         return page_box;
+    }
+
+    private void on_index_changed() {
+        listbox.@foreach ((row) => {
+            var pageItem = (ENotes.PageItem) row;
+            PageTable.get_instance ().save_page_order (pageItem.page, pageItem.get_index());
+        });
     }
 
     public void new_blank_page () {
