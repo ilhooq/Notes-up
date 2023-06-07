@@ -26,7 +26,7 @@ executable(
         dependency('gee-0.8'),
         dependency('gtksourceview-4'),
         dependency('gtk+-3.0'),
-        dependency('webkit2gtk-4.0'),
+        dependency('webkit2gtk-4.1'),
         dependency('sqlite3', version : '>=3.5.9'),
         dependency('gtkspell3-3.0'),
         dependency('libmarkdown')
